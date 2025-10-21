@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Available Newsletters{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Available Newsletters</h1>
+    
+    <div class="newsletter-list">
+        {% for slug, newsletter in newsletters.items() %}
+        <div class="newsletter-card">
+            <h2><a href="/{{ slug }}">{{ newsletter.name }}</a></h2>
+            <p>{{ newsletter.description }}</p>
+            <a href="/{{ slug }}" class="subscribe-link">Subscribe to {{ newsletter.name }}</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.newsletter-list {
+    display: grid;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.newsletter-card {
+    border: 1px solid #ddd;
+    padding: 1.5rem;
+    border-radius: 8px;
+    background: #f9f9f9;
+}
+
+.newsletter-card h2 {
+    margin-top: 0;
+}
+
+.newsletter-card h2 a {
+    text-decoration: none;
+    color: #007cba;
+}
+
+.newsletter-card h2 a:hover {
+    text-decoration: underline;
+}
+
+.subscribe-link {
+    display: inline-block;
+    background-color: #007cba;
+    color: white;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-top: 1rem;
+}
+
+.subscribe-link:hover {
+    background-color: #005a87;
+}
+</style>
+{% endblock %}

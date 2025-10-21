@@ -1,0 +1,43 @@
+{% extends "newsletters/base.html" %}
+
+{% block content %}
+<h1>DC Tech Events Weekly</h1>
+<p>We'll send you a bunch of interesting events, every Monday.</p>
+{% include "newsletters/partials//signup_form.html" %}
+<div id="message"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<script>
+// Fallback for non-HTMX browsers
+document.addEventListener('DOMContentLoaded', function() {
+    if (!window.htmx) {
+        const form = document.getElementById('signup-form');
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const email = form.email.value;
+            const message = document.getElementById('message');
+
+            fetch('/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({email: email})
+            })
+            .then(response => response.json())
+            .then(data => {
+                message.className = data.error ? 'error-message' : 'success-message';
+                message.textContent = data.message || data.error;
+                if (!data.error) form.reset();
+            })
+            .catch(error => {
+                message.className = 'error-message';
+                message.textContent = 'An error occurred. Please try again.';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

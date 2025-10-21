@@ -1,0 +1,14 @@
+{
+  "sites": [
+    {
+      "slug": "dctech",
+      "name": "DC Tech Events",
+      "url": "https://dctech.events",
+      "github_repo": "https://github.com/rosskarchner/dctech.events",
+      "contact_list_name": "newsletters",
+      "topic_name": "dctech",
+      "from_email": "outbound@dctech.events",
+      "reply_to_email": "ross@karchner.com"
+    }
+  ]
+}

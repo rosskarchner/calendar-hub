@@ -1,0 +1,24 @@
+[Unit]
+Description=Calendar Hub Flask Application
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/calendar-hub
+Environment="PATH=/opt/calendar-hub/venv/bin"
+Environment="FLASK_ENV=production"
+ExecStart=/opt/calendar-hub/venv/bin/gunicorn \
+    --workers 4 \
+    --bind 127.0.0.1:8000 \
+    --access-logfile /var/log/calendar-hub/access.log \
+    --error-logfile /var/log/calendar-hub/error.log \
+    --log-level info \
+    wsgi:app
+
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

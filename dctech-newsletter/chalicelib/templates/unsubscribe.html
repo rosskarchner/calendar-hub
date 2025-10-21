@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Unsubscribe Confirmation</h1>
+<p>Are you sure you want to unsubscribe from DC Tech Events Weekly?</p>
+<form id="unsubscribe-form" onsubmit="submitForm(event)">
+    <input type="hidden" name="email" value="{{ email }}">
+    <input type="hidden" name="confirmation_id" value="{{ confirmation_id }}">
+    <input type="hidden" name="token" value="{{ token }}">
+    <button type="submit">Confirm Unsubscribe</button>
+</form>
+<p id="message"></p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function submitForm(event) {
+    event.preventDefault();
+    const form = document.getElementById('unsubscribe-form');
+    const message = document.getElementById('message');
+    const formData = {
+        email: form.email.value,
+        confirmation_id: form.confirmation_id.value,
+        token: form.token.value
+    };
+
+    fetch('/unsubscribe', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => {
+        if (response.ok) {
+            message.style.color = 'green';
+            message.textContent = 'Successfully unsubscribed';
+            form.style.display = 'none';
+        } else {
+            throw new Error('Unsubscribe failed');
+        }
+    })
+    .catch(error => {
+        message.style.color = 'red';
+        message.textContent = 'An error occurred. Please try again.';
+    });
+}
+</script>
+{% endblock %}

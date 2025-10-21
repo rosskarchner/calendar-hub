@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}{{ site.name }} - Event Submission and Newsletter{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="text-center mb-5">
+            <h1 class="display-4 mb-3">Welcome to {{ site.name }}</h1>
+            <p class="lead">Submit events or subscribe to our newsletter</p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Newsletter Signup Card -->
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="card-title mb-3">Newsletter</h3>
+                        <p class="card-text flex-grow-1">
+                            Stay updated with upcoming events in the DC tech community.
+                            Subscribe to receive regular updates directly to your inbox.
+                        </p>
+                        <a href="/{{ site.slug }}/newsletter" class="btn btn-primary btn-lg w-100">
+                            Subscribe to Newsletter
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Submission Card -->
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="card-title mb-3">Submit Events</h3>
+                        <p class="card-text flex-grow-1">
+                            Have an event to share? Submit up to five events at a time.
+                        </p>
+                        <a href="/{{ site.slug }}/submit" class="btn btn-success btn-lg w-100">
+                            Submit Events
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 text-center text-muted">
+            <p>
+                <small>
+                    All submissions require email confirmation.
+                    Visit <a href="{{ site.url }}">{{ site.url }}</a> to view upcoming events.
+                </small>
+            </p>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+    .card {
+        transition: transform 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+</style>
+{% endblock %}
+{% endblock %}

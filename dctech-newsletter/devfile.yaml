@@ -1,0 +1,17 @@
+schemaVersion: 2.0.0
+components:
+  - name: dev
+    container:
+      image: public.ecr.aws/aws-mde/universal-image:latest
+      env:
+        - name: PYTHON_VERSION
+          value: "3.12"
+commands:
+  - id: install
+    exec:
+      component: dev
+      commandLine: "pip install -r requirements.txt && pip install pytest"
+  - id: test
+    exec:
+      component: dev
+      commandLine: "pytest tests/"
