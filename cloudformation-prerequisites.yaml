@@ -1,0 +1,308 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for Calendar Hub prerequisite AWS resources'
+
+Parameters:
+  DomainName:
+    Type: String
+    Description: 'Domain name for the application (e.g., yourdomain.com)'
+    Default: 'example.com'
+  
+  SenderEmail:
+    Type: String
+    Description: 'Email address for sending notifications (e.g., outbound@yourdomain.com)'
+    Default: 'outbound@example.com'
+  
+  CSRFSecret:
+    Type: String
+    Description: 'CSRF secret key for events'
+    NoEcho: true
+    MinLength: 32
+    Default: 'change-this-to-a-random-32-char-string'
+  
+  GitHubToken:
+    Type: String
+    Description: 'GitHub personal access token'
+    NoEcho: true
+    Default: 'ghp_your_github_personal_access_token'
+  
+  NewsletterCSRFSecret:
+    Type: String
+    Description: 'CSRF secret key for newsletter'
+    NoEcho: true
+    MinLength: 32
+    Default: 'change-this-to-another-random-32-char-string'
+
+Resources:
+  # DynamoDB Table for Event Submissions
+  DCTechEventsSubmissionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: DCTechEventsSubmissions
+      AttributeDefinitions:
+        - AttributeName: submission_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: submission_id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: Application
+          Value: CalendarHub
+        - Key: Environment
+          Value: Production
+
+  # KMS Key for Newsletter Confirmations
+  NewsletterConfirmationKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: 'Calendar Hub Newsletter Confirmation Key'
+      KeyUsage: GENERATE_VERIFY_MAC
+      KeySpec: HMAC_256
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+          - Sid: Allow use of the key for MAC operations
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt CalendarHubRole.Arn
+            Action:
+              - 'kms:GenerateMac'
+              - 'kms:VerifyMac'
+              - 'kms:DescribeKey'
+            Resource: '*'
+      Tags:
+        - Key: Application
+          Value: CalendarHub
+        - Key: Environment
+          Value: Production
+
+  # KMS Key Alias
+  NewsletterConfirmationKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/calendar-hub-newsletter-confirmation
+      TargetKeyId: !Ref NewsletterConfirmationKey
+
+  # Secrets Manager - CSRF Secret for Events
+  EventsCSRFSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: dctech-events/csrf-secret
+      Description: 'CSRF secret for Calendar Hub events'
+      SecretString: !Ref CSRFSecret
+      Tags:
+        - Key: Application
+          Value: CalendarHub
+        - Key: Environment
+          Value: Production
+
+  # Secrets Manager - GitHub Token
+  GitHubTokenSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: dctech-events/github-token
+      Description: 'GitHub personal access token for Calendar Hub'
+      SecretString: !Ref GitHubToken
+      Tags:
+        - Key: Application
+          Value: CalendarHub
+        - Key: Environment
+          Value: Production
+
+  # Secrets Manager - Newsletter CSRF Secret
+  NewsletterCSRFSecretManager:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: newsletter/csrf_secret
+      Description: 'CSRF secret for Calendar Hub newsletter'
+      SecretString: !Sub |
+        {
+          "csrf_secret": "${NewsletterCSRFSecret}"
+        }
+      Tags:
+        - Key: Application
+          Value: CalendarHub
+        - Key: Environment
+          Value: Production
+
+  # SES Email Identity
+  SESEmailIdentity:
+    Type: AWS::SESv2::EmailIdentity
+    Properties:
+      EmailIdentity: !Ref SenderEmail
+      DkimSigningAttributes:
+        NextSigningKeyLength: RSA_2048_BIT
+      Tags:
+        - Key: Application
+          Value: CalendarHub
+        - Key: Environment
+          Value: Production
+
+  # SES Contact List for Newsletters
+  SESContactList:
+    Type: AWS::SESv2::ContactList
+    Properties:
+      ContactListName: newsletters
+      Description: 'Contact list for Calendar Hub newsletters'
+      Topics:
+        - TopicName: dctech
+          DisplayName: 'DC Tech Events'
+          Description: 'DC Tech community events and updates'
+          DefaultSubscriptionStatus: OPT_IN
+      Tags:
+        - Key: Application
+          Value: CalendarHub
+        - Key: Environment
+          Value: Production
+
+  # IAM Role for EC2 Instance
+  CalendarHubRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CalendarHubRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Policies:
+        - PolicyName: CalendarHubDynamoDBPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource: !GetAtt DCTechEventsSubmissionsTable.Arn
+        - PolicyName: CalendarHubSESPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                  - ses:SendRawEmail
+                  - sesv2:SendEmail
+                  - sesv2:CreateContact
+                  - sesv2:GetContact
+                  - sesv2:UpdateContact
+                  - sesv2:DeleteContact
+                  - sesv2:ListContacts
+                Resource: '*'
+        - PolicyName: CalendarHubKMSPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:GenerateMac
+                  - kms:VerifyMac
+                  - kms:DescribeKey
+                Resource: !GetAtt NewsletterConfirmationKey.Arn
+        - PolicyName: CalendarHubSecretsManagerPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Ref EventsCSRFSecret
+                  - !Ref GitHubTokenSecret
+                  - !Ref NewsletterCSRFSecretManager
+      Tags:
+        - Key: Application
+          Value: CalendarHub
+        - Key: Environment
+          Value: Production
+
+  # Instance Profile for EC2
+  CalendarHubInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: CalendarHubInstanceProfile
+      Roles:
+        - !Ref CalendarHubRole
+
+Outputs:
+  DynamoDBTableName:
+    Description: 'Name of the DynamoDB table for event submissions'
+    Value: !Ref DCTechEventsSubmissionsTable
+    Export:
+      Name: !Sub '${AWS::StackName}-DynamoDBTableName'
+
+  DynamoDBTableArn:
+    Description: 'ARN of the DynamoDB table'
+    Value: !GetAtt DCTechEventsSubmissionsTable.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-DynamoDBTableArn'
+
+  KMSKeyId:
+    Description: 'KMS Key ID for newsletter confirmations'
+    Value: !Ref NewsletterConfirmationKey
+    Export:
+      Name: !Sub '${AWS::StackName}-KMSKeyId'
+
+  KMSKeyArn:
+    Description: 'KMS Key ARN for newsletter confirmations'
+    Value: !GetAtt NewsletterConfirmationKey.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-KMSKeyArn'
+
+  IAMRoleArn:
+    Description: 'ARN of the IAM role for EC2 instances'
+    Value: !GetAtt CalendarHubRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-IAMRoleArn'
+
+  InstanceProfileArn:
+    Description: 'ARN of the instance profile for EC2'
+    Value: !GetAtt CalendarHubInstanceProfile.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-InstanceProfileArn'
+
+  SESEmailIdentity:
+    Description: 'SES email identity for sending emails'
+    Value: !Ref SESEmailIdentity
+    Export:
+      Name: !Sub '${AWS::StackName}-SESEmailIdentity'
+
+  SESContactListName:
+    Description: 'SES contact list name for newsletters'
+    Value: !Ref SESContactList
+    Export:
+      Name: !Sub '${AWS::StackName}-SESContactListName'
+
+  SecretsManagerCSRFArn:
+    Description: 'ARN of the CSRF secret in Secrets Manager'
+    Value: !Ref EventsCSRFSecret
+    Export:
+      Name: !Sub '${AWS::StackName}-CSRFSecretArn'
+
+  SecretsManagerGitHubArn:
+    Description: 'ARN of the GitHub token secret in Secrets Manager'
+    Value: !Ref GitHubTokenSecret
+    Export:
+      Name: !Sub '${AWS::StackName}-GitHubSecretArn'
+
+  SecretsManagerNewsletterArn:
+    Description: 'ARN of the newsletter CSRF secret in Secrets Manager'
+    Value: !Ref NewsletterCSRFSecretManager
+    Export:
+      Name: !Sub '${AWS::StackName}-NewsletterSecretArn'

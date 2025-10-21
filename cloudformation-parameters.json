@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "DomainName",
+    "ParameterValue": "yourdomain.com"
+  },
+  {
+    "ParameterKey": "SenderEmail",
+    "ParameterValue": "outbound@yourdomain.com"
+  },
+  {
+    "ParameterKey": "CSRFSecret",
+    "ParameterValue": "CHANGE-THIS-TO-A-RANDOM-32-CHAR-STRING"
+  },
+  {
+    "ParameterKey": "GitHubToken",
+    "ParameterValue": "ghp_your_github_personal_access_token"
+  },
+  {
+    "ParameterKey": "NewsletterCSRFSecret",
+    "ParameterValue": "CHANGE-THIS-TO-ANOTHER-RANDOM-32-CHAR"
+  }
+]
