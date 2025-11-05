@@ -1,0 +1,47 @@
+# Git files
+.git
+.gitignore
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.local
+
+# Documentation
+*.md
+ARCHITECTURE.md
+QUICK_REFERENCE.md
+REFACTORING_GUIDE.md
+EXPLORATION_SUMMARY.md
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Other
+.DS_Store
+*.log

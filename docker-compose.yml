@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: calendar-hub-db
+    environment:
+      POSTGRES_DB: calendar_hub
+      POSTGRES_USER: calendar_user
+      POSTGRES_PASSWORD: calendar_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U calendar_user -d calendar_hub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: calendar-hub-app
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=true
+      - DATABASE_URL=postgresql://calendar_user:calendar_pass@db:5432/calendar_hub
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-please-change-in-production}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - DOMAIN_NAME=${DOMAIN_NAME:-localhost:5000}
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        python -c 'from app import create_app; from models import db; app = create_app(); app.app_context().push(); db.create_all(); print(\"Database tables created successfully\")' &&
+        gunicorn --bind 0.0.0.0:5000 --workers 2 --reload --timeout 120 wsgi:app
+      "
+
+volumes:
+  postgres_data:

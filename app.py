@@ -1,5 +1,6 @@
 """Main Flask application for Calendar Hub."""
 from flask import Flask, g, request
+from flask_login import LoginManager
 from config import config
 import os
 
@@ -8,21 +9,42 @@ def create_app(config_name=None):
     """Application factory pattern."""
     if config_name is None:
         config_name = os.environ.get('FLASK_ENV', 'development')
-    
+
     app = Flask(__name__)
     app.config.from_object(config.get(config_name, config['default']))
-    
+
+    # Initialize database
+    from models import db, User
+    db.init_app(app)
+
+    # Initialize Flask-Login
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        from services.database import UserService
+        return UserService.get_user_by_id(int(user_id))
+
+    # Create tables
+    with app.app_context():
+        db.create_all()
+
     # Initialize error handlers and logging
     from utils.error_handlers import init_error_handlers, init_logging
     init_error_handlers(app)
     init_logging(app)
-    
+
     # Register blueprints
+    from blueprints.auth import auth_bp
     from blueprints.events import events_bp
-    from blueprints.newsletters import newsletters_bp
-    
+    # NOTE: Newsletter functionality disabled - requires migration from AWS SES to alternative email service
+    # from blueprints.newsletters import newsletters_bp
+
+    app.register_blueprint(auth_bp)
     app.register_blueprint(events_bp)
-    app.register_blueprint(newsletters_bp)
+    # app.register_blueprint(newsletters_bp)
     
     # Add middleware to inject site context
     @app.before_request

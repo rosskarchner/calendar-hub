@@ -12,13 +12,22 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
         <div class="container">
             <a class="navbar-brand" href="/">{% if site %}{{ site.name }}{% else %}Calendar Hub{% endif %}</a>
-            {% if site %}
             <div class="navbar-nav ms-auto">
+                {% if site %}
                 <a class="nav-link" href="/{{ site.slug }}">Home</a>
                 <a class="nav-link" href="/{{ site.slug }}/submit">Submit Event</a>
-                <a class="nav-link" href="/{{ site.slug }}/newsletter">Newsletter</a>
+                {% endif %}
+                {% if current_user.is_authenticated %}
+                <span class="navbar-text me-3">
+                    <img src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}"
+                         class="rounded-circle" style="width: 32px; height: 32px; margin-right: 8px;">
+                    {{ current_user.username }}
+                </span>
+                <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+                {% else %}
+                <a class="nav-link" href="{{ url_for('auth.login') }}">Login with GitHub</a>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
     </nav>
 
