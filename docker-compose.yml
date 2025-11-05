@@ -31,8 +31,16 @@ services:
       - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
       - DOMAIN_NAME=${DOMAIN_NAME:-localhost:5000}
+      # AWS settings for newsletter functionality
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - SENDER_EMAIL=${SENDER_EMAIL}
+      - CONFIRMATION_KEY_ID=${CONFIRMATION_KEY_ID}
     volumes:
       - .:/app
+      # Mount AWS credentials if available (optional - can use env vars instead)
+      - ~/.aws:/root/.aws:ro
     depends_on:
       db:
         condition: service_healthy

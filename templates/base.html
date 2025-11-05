@@ -16,6 +16,7 @@
                 {% if site %}
                 <a class="nav-link" href="/{{ site.slug }}">Home</a>
                 <a class="nav-link" href="/{{ site.slug }}/submit">Submit Event</a>
+                <a class="nav-link" href="/{{ site.slug }}/newsletter">Newsletter</a>
                 {% endif %}
                 {% if current_user.is_authenticated %}
                 <span class="navbar-text me-3">

@@ -39,12 +39,11 @@ def create_app(config_name=None):
     # Register blueprints
     from blueprints.auth import auth_bp
     from blueprints.events import events_bp
-    # NOTE: Newsletter functionality disabled - requires migration from AWS SES to alternative email service
-    # from blueprints.newsletters import newsletters_bp
+    from blueprints.newsletters import newsletters_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(events_bp)
-    # app.register_blueprint(newsletters_bp)
+    app.register_blueprint(newsletters_bp)
     
     # Add middleware to inject site context
     @app.before_request

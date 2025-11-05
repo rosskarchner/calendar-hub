@@ -8,6 +8,7 @@ A multi-site event submission system that allows users to submit events via a we
 - **Multi-Site Support**: Single application can serve multiple communities
 - **Event Submission**: Users submit events that are stored in PostgreSQL
 - **Automatic PR Creation**: Creates GitHub PRs using the submitter's account
+- **Newsletter Management**: AWS SES-based newsletter subscriptions with KMS-signed confirmation links
 - **Docker Support**: Fully containerized with Docker Compose
 
 ## Requirements
@@ -15,6 +16,7 @@ A multi-site event submission system that allows users to submit events via a we
 - Docker and Docker Compose
 - GitHub OAuth App credentials
 - A GitHub repository for storing event data
+- AWS account with SES and KMS configured (for newsletter functionality)
 
 ## Quick Start
 
@@ -78,21 +80,22 @@ This version has been refactored from the original AWS-based architecture:
 
 ### What Changed
 
-| Before (AWS) | After (Docker) |
+| Before (AWS) | After (Docker + AWS) |
 |-------------|----------------|
 | DynamoDB | PostgreSQL |
-| AWS SES (email) | Removed (no email confirmation needed) |
 | AWS Secrets Manager | Environment variables |
-| AWS KMS | Removed |
-| Magic link authentication | GitHub OAuth |
+| Magic link authentication (email) | GitHub OAuth |
 | Service account creates PRs | User's GitHub account creates PRs |
+| AWS SES for event confirmations | Not needed (GitHub OAuth) |
+| AWS SES/KMS for newsletters | Still used for newsletters |
 
 ### Key Improvements
 
 1. **User-Created PRs**: Pull requests are now created using the authenticated user's GitHub token, so PRs appear to come from the actual submitter
-2. **No AWS Dependencies**: Everything runs locally or in your preferred container environment
-3. **Simplified Auth**: GitHub OAuth eliminates email verification flow
+2. **Reduced AWS Dependencies**: Only SES and KMS needed for newsletter functionality
+3. **Simplified Event Auth**: GitHub OAuth eliminates email verification flow for event submissions
 4. **PostgreSQL**: Standard relational database instead of DynamoDB
+5. **Docker-First**: Easy local development with docker-compose
 
 ## Development
 
@@ -176,12 +179,60 @@ docker-compose up       # Recreate with fresh database
 
 ## Newsletter Functionality
 
-Newsletter functionality has been disabled in this refactoring as it required AWS SES. To re-enable:
+Newsletter subscriptions use AWS SES and KMS for secure, stateless confirmation links.
 
-1. Choose an email service provider (SendGrid, Mailgun, SMTP, etc.)
-2. Implement an email service adapter
-3. Update `blueprints/newsletters/routes.py` to use the new email service
-4. Uncomment newsletter blueprint registration in `app.py`
+### AWS Setup for Newsletters
+
+1. **Configure AWS Credentials**:
+   - Install AWS CLI: `pip install awscli`
+   - Run `aws configure` to set up credentials
+   - Or use IAM roles if running in AWS (EC2, ECS, etc.)
+
+2. **Set up AWS SES**:
+   - Verify your sender email address in SES console
+   - If in sandbox mode, also verify recipient emails for testing
+   - Request production access for unlimited recipients
+
+3. **Create KMS Key**:
+   - Go to AWS KMS console
+   - Create a symmetric encryption key
+   - Note the Key ID and add to `.env` as `CONFIRMATION_KEY_ID`
+
+4. **Configure IAM Permissions**:
+   Your AWS credentials need these permissions:
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Effect": "Allow",
+         "Action": [
+           "ses:SendEmail",
+           "sesv2:SendEmail",
+           "sesv2:CreateContact",
+           "sesv2:UpdateContact",
+           "sesv2:DeleteContact",
+           "kms:GenerateMac",
+           "kms:VerifyMac"
+         ],
+         "Resource": "*"
+       }
+     ]
+   }
+   ```
+
+5. **Update sites.json**:
+   Add newsletter configuration for each site:
+   ```json
+   {
+     "name": "DC Tech Events",
+     "slug": "dctech",
+     "github_repo": "https://github.com/your-org/your-repo",
+     "from_email": "events@example.com",
+     "contact_list_name": "dctech-newsletter",
+     "topic_name": "dctech-events"
+   }
+   ```
 
 ## License
 

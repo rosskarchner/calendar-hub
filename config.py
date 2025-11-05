@@ -24,6 +24,11 @@ class Config:
     GITHUB_CLIENT_ID = os.environ.get('GITHUB_CLIENT_ID')
     GITHUB_CLIENT_SECRET = os.environ.get('GITHUB_CLIENT_SECRET')
 
+    # AWS settings (for newsletter functionality)
+    SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'outgoing@dctech.events')
+    CONFIRMATION_KEY_ID = os.environ.get('CONFIRMATION_KEY_ID')  # AWS KMS key for newsletter confirmations
+    AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
+
     # Domain settings
     DOMAIN_NAME = os.environ.get('DOMAIN_NAME', 'localhost:5000')
 
